@@ -1,0 +1,6 @@
+
+{
+  "name": "ClearBG AI",
+  "description": "Professional-grade background removal powered by Gemini 2.5. Upload your photos, remove backgrounds instantly, and download high-quality results.",
+  "requestFramePermissions": []
+}
