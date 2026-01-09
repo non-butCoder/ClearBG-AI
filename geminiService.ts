@@ -1,15 +1,21 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { BgColor } from "../types";
 
 export class GeminiService {
-  static async removeBackground(base64Image: string, mimeType: string, bgColor: BgColor = 'white'): Promise<string> {
-    // Always use exactly this initialization format as per @google/genai guidelines
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
+  static async removeBackground(
+    base64Image: string,
+    mimeType: string,
+    bgColor: BgColor = "white"
+  ): Promise<string> {
+
+    // ✅ Correct for Vite + GitHub Pages
+    const ai = new GoogleGenAI({
+      apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+    });
+
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: "gemini-2.5-flash-image",
         contents: {
           parts: [
             {
@@ -30,7 +36,7 @@ export class GeminiService {
       }
 
       for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
+        if (part.inlineData?.data) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
