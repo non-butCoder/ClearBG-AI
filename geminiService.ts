@@ -1,5 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
 import { BgColor } from "../types";
+
+interface RemoveBgResponse {
+  image: string;
+  error?: string;
+}
 
 export class GeminiService {
   static async removeBackground(
@@ -7,44 +11,36 @@ export class GeminiService {
     mimeType: string,
     bgColor: BgColor = "white"
   ): Promise<string> {
-
-    // ✅ Correct for Vite + GitHub Pages
-    const ai = new GoogleGenAI({
-      apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-    });
-
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Image,
-                mimeType: mimeType,
-              },
-            },
-            {
-              text: `Remove the background of this image. Extract the main subject precisely and place it on a clean, solid ${bgColor} background. Ensure the subject's edges are sharp and high quality. Return only the edited image with the solid ${bgColor} background.`,
-            },
-          ],
+      const response = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          base64Image,
+          mimeType,
+          bgColor,
+        }),
       });
 
-      if (!response.candidates?.[0]?.content?.parts) {
-        throw new Error("No content returned from the model.");
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Backend request failed");
       }
 
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData?.data) {
-          return `data:image/png;base64,${part.inlineData.data}`;
-        }
+      const data: RemoveBgResponse = await response.json();
+
+      if (!data.image) {
+        throw new Error(data.error || "No image returned from backend");
       }
 
-      throw new Error("Model did not return an image part.");
+      return data.image;
     } catch (error: any) {
-      console.error("Gemini API Error:", error);
-      throw new Error(error.message || "Failed to process image with Gemini AI.");
+      console.error("Background removal failed:", error);
+      throw new Error(
+        error.message || "Failed to remove background using Gemini AI"
+      );
     }
   }
 }
